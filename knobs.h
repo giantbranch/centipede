@@ -59,7 +59,7 @@ class KnobId {
 //   E.g. whether to insert, overwrite, swap, etc, or whether to cross-over.
 //
 // Knobs is effectively a fixed-size array of bytes with named elements.
-// The engine loads this array at startup or uses a default value.
+// The engine loads this array at startup or uses a default value zero.
 // The engine may also pass Knobs to a custom mutator that supports it.
 //
 // Each knob has its own interpretation.
@@ -89,6 +89,8 @@ class Knobs {
   // Total number of knobs. Keep it small-ish for now.
   static constexpr size_t kNumKnobs = 32;
   using value_type = uint8_t;
+  // 256 different values of value_type.
+  static constexpr size_t kNumPossibleValues = 1 << (8 * sizeof(value_type));
 
   // Creates and returns a new KnobId and associates a `knob_name` with it.
   // Must be called at the process startup (assign the result to a global):
@@ -165,6 +167,25 @@ class Knobs {
       ++idx;
     }
     __builtin_unreachable();
+  }
+
+  // Chooses between two strategies, i.e. returns true or false.
+  // If the value of the knob `knob_id` is 0 or 255, returns default_value.
+  // If the value of the knob is 1 or 254, returns false or true, respectively.
+  // For all other values returns true or false based on `random`.
+  // The bigger the value the more likely it is that true will be returned,
+  // but both outcomes are possible.
+  bool GenerateBool(KnobId knob_id, bool default_value, uint64_t random) const {
+    auto value = Value(knob_id);
+    if (value == 0 || value == 255) return default_value;
+    if (value == 1) return false;
+    if (value == 254) return true;
+    // Number of knob values other than the ones checked above = 252
+    constexpr size_t kNumOtherKnobValues = kNumPossibleValues - 4;
+    // At this point `value` is in [2,253].
+    uint8_t value_minus2 = value - 2;  // in [0, 251]
+    random %= kNumOtherKnobValues;     // in [0, 251]
+    return random <= value_minus2;
   }
 
   // Viriant of Choose() where the choices are KnobIds themselfs.

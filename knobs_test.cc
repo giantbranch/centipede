@@ -14,6 +14,8 @@
 
 #include "./knobs.h"
 
+#include <cstddef>
+
 #include "googletest/include/gtest/gtest.h"
 #include "absl/container/flat_hash_map.h"
 #include "./logging.h"
@@ -70,6 +72,40 @@ TEST(Knobs, Choose) {
   }
   EXPECT_GT(str_to_freq["AAA"], 9 * str_to_freq["BBB"]);
   EXPECT_GT(str_to_freq["BBB"], kNumIter / 200);
+}
+
+TEST(Knobs, GenerateBool) {
+  Knobs knobs;
+  constexpr size_t kNumIter = 252;
+  // Checks the GenerateBool on kNumIter different (fake) random values,
+  // verifies the expected number of "true" results.
+  auto check = [&](Knobs::value_type knob_value, bool default_value,
+                   size_t expetect_num_true_results) {
+    knobs.Set(knob_value);
+    size_t num_true = 0;
+    for (size_t fake_random = 0; fake_random < kNumIter; ++fake_random) {
+      if (knobs.GenerateBool(knob0, default_value, fake_random)) ++num_true;
+    }
+    EXPECT_EQ(num_true, expetect_num_true_results);
+  };
+
+  // With knob0 set to 0 or 255, we are getting the default value.
+  check(0, true, kNumIter);
+  check(0, false, 0);
+  check(255, true, kNumIter);
+  check(255, false, 0);
+
+  // knob0 is set to 1 => always returns false. 254 => always returns false.
+  check(1, true, 0);
+  check(1, false, 0);
+  check(254, true, kNumIter);
+  check(254, false, kNumIter);
+
+  // With knob0 set to anything else we get this many "true" results minus one.
+  for (uint8_t knob_value = 2; knob_value <= 253; ++knob_value) {
+    check(knob_value, true, knob_value - 1);
+    check(knob_value, false, knob_value - 1);
+  }
 }
 
 TEST(KnobsDeathTest, NewId) {
