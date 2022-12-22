@@ -131,7 +131,7 @@ CFTable GetCfTableFromBinary(std::string_view binary_path,
 
 ControlFlowGraph::ControlFlowGraph(const CFTable &cf_table,
                                    const PCTable &pc_table)
-    : func_entries_(pc_table.size()) {
+    : func_entries_(pc_table.size()), reachability_(pc_table.size()) {
   CHECK(!cf_table.empty());
   for (size_t j = 0; j < cf_table.size();) {
     std::vector<uintptr_t> successors;
