@@ -299,11 +299,21 @@ size_t CoverageFrontier::Compute(const Corpus &corpus) {
         // Now we have a frontier, compute the weight.
         frontier_[i] = true;
         // Calculate frontier weight.
-        // TODO(navidem): This is too shallow. Use reachability computation
-        // to identify all BBs affected by this blocked successor.
+        // Here we use rachability and coverage to indentify all reachable and
+        // non-covered BBs from successor, and then collect any function calls
+        // in those BBs.
+        std::vector<uintptr_t> non_covered_functions;
+        for (auto reachable :
+             binary_info_.control_flow_graph.LazyGetReachabilityForPc(
+                 successor)) {
+          if (coverage.BlockIsCovered(reachable)) continue;
+          for (auto non_cov_func :
+               binary_info_.call_graph.GetBasicBlockCallees(reachable)) {
+            non_covered_functions.push_back(non_cov_func);
+          }
+        }
         frontier_weight_[i] += ComputeFrontierWeight(
-            coverage, binary_info_.control_flow_graph,
-            binary_info_.call_graph.GetBasicBlockCallees(successor));
+            coverage, binary_info_.control_flow_graph, non_covered_functions);
       }
     }
   });
