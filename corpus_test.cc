@@ -411,8 +411,10 @@ TEST(CoverageFrontier, Compute) {
       16, 13, 0, 0, 17, 0, 0, 18, 0, 4, 0,  // This bb calls 4.
   };
 
-  ControlFlowGraph cfg(cf_table, pc_table);
-  CallGraph call_graph(cf_table, pc_table);
+  ControlFlowGraph cfg;
+  cfg.InitializeControlFlowGraph(cf_table, pc_table);
+  CallGraph call_graph;
+  call_graph.InitializeCallGraph(cf_table, pc_table);
   BinaryInfo bin_info = {pc_table, {}, cf_table, cfg, call_graph};
   CoverageFrontier frontier(bin_info);
 
@@ -490,8 +492,10 @@ TEST(CoverageFrontierDeath, InvalidIndexToFrontier) {
       0, 1, 0, 0, 1, 0, 0,
   };
 
-  ControlFlowGraph cfg(cf_table, pc_table);
-  CallGraph call_graph(cf_table, pc_table);
+  ControlFlowGraph cfg;
+  cfg.InitializeControlFlowGraph(cf_table, pc_table);
+  CallGraph call_graph;
+  call_graph.InitializeCallGraph(cf_table, pc_table);
 
   BinaryInfo bin_info = {pc_table, {}, cf_table, cfg, call_graph};
   CoverageFrontier frontier(bin_info);
